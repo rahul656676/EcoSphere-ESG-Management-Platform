@@ -33,7 +33,7 @@ EcoSphere is a scalable, enterprise-grade platform designed to track, manage, an
 
 ---
 
-## 🏆 Hackathon Judging Criteria Check (Why EcoSphere Wins)
+## 🏆 Competitive Advantage (Why EcoSphere is Better Than Others)
 
 We engineered EcoSphere focusing on scalable architecture, resilience, and enterprise patterns:
 
