@@ -39,3 +39,23 @@ def test_unauthorized_access(client):
     response = client.get("/api/auth/me")
     assert response.status_code == 200
     assert response.get_json() == {"authenticated": False}
+
+def test_health_check(client):
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "ok"
+    assert data["database"] == "connected"
+
+def test_version_endpoint(client):
+    # Note: version route is decorated without login_required so anyone can see
+    response = client.get("/api/version")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["version"] == "1.0.0"
+    assert "EcoSphere" in data["name"]
+
+# Contribution by Tarun Kr Saini
+
+
+
