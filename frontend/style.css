@@ -78,6 +78,8 @@ a { text-decoration: none; color: inherit; }
 
 .sidebar {
   width: 260px;
+  min-width: 260px;
+  flex-shrink: 0;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   display: flex;

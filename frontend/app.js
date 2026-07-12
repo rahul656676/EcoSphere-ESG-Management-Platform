@@ -79,6 +79,25 @@ function renderShell(activePage, pageTitle) {
     return html;
   }).join("");
 
+  window.globalSearchMenu = function(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll(".sidebar .nav-item, .sidebar .nav-sub-item").forEach(link => {
+      if (link.textContent.toLowerCase().includes(q)) {
+        link.style.display = "";
+      } else {
+        link.style.display = "none";
+      }
+    });
+    document.querySelectorAll(".sidebar .nav-group").forEach(group => {
+      const hasVisibleChild = Array.from(group.querySelectorAll('.nav-sub-item')).some(child => child.style.display !== "none");
+      if (hasVisibleChild || group.querySelector('.nav-item').textContent.toLowerCase().includes(q)) {
+        group.style.display = "";
+      } else {
+        group.style.display = "none";
+      }
+    });
+  };
+
   document.getElementById("sidebar").innerHTML = `
     <div class="brand">
       <i data-lucide="leaf" class="logo-icon"></i>
@@ -98,7 +117,7 @@ function renderShell(activePage, pageTitle) {
       </div>
       <div class="global-search">
         <i data-lucide="search" class="icon"></i>
-        <input type="text" placeholder="Search departments, metrics, or reports...">
+        <input type="text" id="globalSearch" oninput="globalSearchMenu(this.value)" placeholder="Search departments, metrics, or reports...">
       </div>
     </div>
     <div class="topbar-right">
