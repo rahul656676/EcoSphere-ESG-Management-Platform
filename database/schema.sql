@@ -248,4 +248,4 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT DEFAULT 'Admin',
     employee_id INTEGER,
     FOREIGN KEY (employee_id) REFERENCES employee(id)
-);
+)
