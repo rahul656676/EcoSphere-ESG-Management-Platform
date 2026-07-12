@@ -2,6 +2,7 @@ import pytest
 import os
 import sys
 import tempfile
+import uuid
 
 # Add backend directory to sys.path so we can import from it
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"))
@@ -12,7 +13,7 @@ import models
 @pytest.fixture
 def client():
     # Use temporary file SQLite for testing to avoid touching production DB
-    db_fd, db_path = tempfile.mkstemp()
+    db_path = os.path.join(tempfile.gettempdir(), f"test_{uuid.uuid4().hex}.db")
     models.DB_PATH = db_path
     app = create_app()
     app.config["TESTING"] = True
@@ -24,8 +25,10 @@ def client():
             models.execute("INSERT INTO users (username, password_hash, role) VALUES ('testuser', 'pbkdf2:sha256:600000$placeholder', 'User')")
         yield client
         
-    os.close(db_fd)
-    os.unlink(db_path)
+    try:
+        os.unlink(db_path)
+    except:
+        pass
 
 def test_login_failure(client):
     response = client.post("/api/auth/login", json={"username": "wrong", "password": "wrong"})

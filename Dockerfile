@@ -19,4 +19,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=5000
 
 # Run with Gunicorn instead of Flask dev server
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--chdir", "backend", "app:app"]
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "--chdir", "backend", "app:app"]

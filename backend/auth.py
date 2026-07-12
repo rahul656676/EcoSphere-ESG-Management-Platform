@@ -5,16 +5,20 @@ Default admin credentials: admin / admin123 (change in Settings after first logi
 """
 
 import time
+import secrets
+import logging
 from functools import wraps
 from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 import models
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
 DEFAULT_ADMIN_USER = "admin"
-DEFAULT_ADMIN_PASS = "admin123"
 
 # Basic in-memory rate limiter for login
 FAILED_LOGINS = {}
@@ -24,8 +28,18 @@ MAX_ATTEMPTS = 5
 
 def ensure_default_admin():
     row = models.query("SELECT * FROM users WHERE username = ?", (DEFAULT_ADMIN_USER,), one=True)
-    pw_hash = generate_password_hash(DEFAULT_ADMIN_PASS)
+    
     if row is None:
+        raw_password = os.environ.get("ADMIN_PASSWORD")
+        if not raw_password:
+            raw_password = secrets.token_urlsafe(12)
+            logger.warning("="*50)
+            logger.warning(" NO ADMIN PASSWORD PROVIDED IN .env")
+            logger.warning(f" GENERATED FIRST-RUN ADMIN PASSWORD: {raw_password}")
+            logger.warning(" Please save this or change it in the UI.")
+            logger.warning("="*50)
+
+        pw_hash = generate_password_hash(raw_password)
         models.insert_row("users", {
             "username": DEFAULT_ADMIN_USER,
             "password_hash": pw_hash,
@@ -35,6 +49,16 @@ def ensure_default_admin():
     else:
         # Reset placeholder hash inserted by seed.sql on first boot
         if row["password_hash"].startswith("pbkdf2:sha256:600000$placeholder"):
+            raw_password = os.environ.get("ADMIN_PASSWORD")
+            if not raw_password:
+                raw_password = secrets.token_urlsafe(12)
+                logger.warning("="*50)
+                logger.warning(" FIRST RUN DETECTED")
+                logger.warning(f" GENERATED FIRST-RUN ADMIN PASSWORD: {raw_password}")
+                logger.warning(" Please save this or change it in the UI.")
+                logger.warning("="*50)
+            
+            pw_hash = generate_password_hash(raw_password)
             models.update_row("users", row["id"], {"password_hash": pw_hash})
 
 

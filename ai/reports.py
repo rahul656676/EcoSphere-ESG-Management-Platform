@@ -169,7 +169,7 @@ def generate_ai_summary(report_type, data):
     executive narrative. Returns a warning if no API key is configured."""
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key or "your_groq_api_key_here" in api_key:
-        return "(AI summary unavailable: Please set a valid GROQ_API_KEY in the .env file)"
+        return generate_offline_heuristic_summary(report_type, data)
     try:
         from groq import Groq
         client = Groq(api_key=api_key)
@@ -186,4 +186,20 @@ def generate_ai_summary(report_type, data):
         )
         return chat_completion.choices[0].message.content
     except Exception as exc:  # pragma: no cover - network/optional dependency
-        return f"(AI summary unavailable: {exc})"
+        # Fallback to local heuristic if network/API fails
+        return generate_offline_heuristic_summary(report_type, data)
+
+
+def generate_offline_heuristic_summary(report_type, data):
+    """Fallback generator when AI API is unavailable."""
+    if report_type == "environmental":
+        co2 = data.get('total_co2_emitted', 0)
+        return f"Offline Summary: The system recorded {co2} kg of CO2 emissions. Please reconnect the AI Copilot for deep trend analysis."
+    elif report_type == "governance":
+        issues = data.get('open_issue_count', 0)
+        return f"Offline Summary: There are currently {issues} open compliance issues that require attention. Reconnect the AI Copilot for predictive risk analysis."
+    elif report_type == "social":
+        approved = data.get('approved_count', 0)
+        return f"Offline Summary: Employees have successfully completed {approved} CSR activities. Reconnect the AI Copilot to generate diversity insights."
+    else:
+        return f"Offline Summary: Data successfully aggregated for {report_type}. Connect a valid Groq API key in the .env file to unlock AI-driven insights."

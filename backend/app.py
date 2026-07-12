@@ -11,12 +11,17 @@ Then open http://localhost:5000  (default login: admin / admin123)
 
 import os
 import sys
+import logging
 from dotenv import load_dotenv
+
+# Configure standard logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
 
-from flask import Flask, send_from_directory, session, redirect
+from flask import Flask, send_from_directory, session, redirect, jsonify
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
@@ -63,6 +68,16 @@ def create_app():
         ensure_default_admin()
         controllers.recompute_department_scores()
         return {"success": True}
+
+    @app.route("/api/health")
+    def health_check():
+        try:
+            # Simple test query to ensure DB is connected
+            models.query("SELECT 1")
+            return jsonify({"status": "ok", "database": "connected"})
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return jsonify({"status": "error", "database": "disconnected"}), 500
 
     return app
 
