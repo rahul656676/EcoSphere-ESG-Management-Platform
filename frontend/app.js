@@ -59,6 +59,13 @@ function esc(str) {
   }[c]));
 }
 
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  if (sidebar) {
+    sidebar.classList.toggle("open");
+  }
+}
+
 function renderShell(activePage, pageTitle) {
   const sidebarHtml = NAV.map(sec => {
     const active = sec.href === activePage;
@@ -79,15 +86,20 @@ function renderShell(activePage, pageTitle) {
   `).join("");
 
   document.getElementById("topbar").innerHTML = `
-    <div style="display:flex;align-items:center;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
       <span class="dots">
         <span style="background:#e0605a"></span><span style="background:#f0b429"></span><span style="background:#3cb371"></span>
       </span>
-      <span class="title">EcoSphere: ${pageTitle}</span>
+      <span class="title hide-mobile">EcoSphere: ${pageTitle}</span>
+      <span class="title title-mobile" style="display:none;">${pageTitle}</span>
     </div>
     <div class="right">
-      <button class="btn btn-outline" style="padding:4px 8px; margin-right:10px; font-size:12px;" onclick="toggleTheme()">🌓 Theme</button>
-      <span id="whoami"></span>
+      <button class="btn btn-outline hide-mobile" style="padding:4px 8px; margin-right:10px; font-size:12px;" onclick="toggleTheme()">🌓 Theme</button>
+      <button class="btn btn-outline" style="padding:4px; font-size:16px;" onclick="toggleTheme()" id="theme-btn-mobile">🌓</button>
+      <span id="whoami" class="hide-mobile"></span>
       <button class="logout" onclick="logout()">Logout</button>
     </div>
   `;

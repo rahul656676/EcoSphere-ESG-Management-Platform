@@ -524,3 +524,46 @@ label { font-size: 13px; color: var(--text); font-weight: 500; display: block; m
 .feature-card .icon-wrapper.primary { background: rgba(94,106,210,0.1); color: var(--primary); }
 .feature-card h4 { font-size: 16px; margin: 0 0 8px; color: var(--text-bright); }
 .feature-card p { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 0 0 20px; flex: 1; }
+
+/* ---------------- Mobile Responsiveness ---------------- */
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-bright);
+  cursor: pointer;
+  padding: 4px;
+}
+#theme-btn-mobile { display: none; }
+@media (max-width: 768px) {
+  .app-shell { flex-direction: column; }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    height: 100vh;
+    transition: left 0.3s ease;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    z-index: 1001;
+  }
+  .sidebar.open { left: 0; }
+  
+  .menu-toggle { display: flex; }
+  .hide-mobile { display: none !important; }
+  .title-mobile { display: inline !important; font-weight: 600; font-size: 15px; }
+  #theme-btn-mobile { display: inline-flex !important; }
+  
+  .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr !important; }
+  
+  .topbar { padding: 10px 16px; }
+  .content { padding: 16px; }
+  .tabs { padding: 0 16px; }
+  .subtabs button { padding: 6px 12px; font-size: 12px; }
+  
+  .ai-assistant-window { width: calc(100vw - 32px); right: 16px; bottom: 80px; height: 60vh; }
+  .modal { width: 95%; padding: 16px; }
+  
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 600px; }
+}
+
