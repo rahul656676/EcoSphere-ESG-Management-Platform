@@ -270,4 +270,6 @@ def generate_ai_chat(message):
         )
         return chat_completion.choices[0].message.content
     except Exception as exc:
-        return "Offline Copilot: API Unreachable at the moment."
+        import traceback
+        traceback.print_exc()
+        return f"Offline Copilot: API Unreachable. Error: {str(exc)}"
