@@ -199,3 +199,83 @@ function sendAIChat() {
       body.scrollTop = body.scrollHeight;
     });
 }
+
+// --- Global Animations & Polish ---
+const uiObserver = new MutationObserver(mutations => {
+  let delay = 0;
+  let addedTargets = false;
+  
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (node.nodeType === 1) {
+        const checkAndAdd = (el) => {
+          if (!el.classList.contains("stagger-item")) {
+            el.classList.add("stagger-item");
+            el.style.animationDelay = `${delay}s`;
+            delay += 0.08;
+            addedTargets = true;
+          }
+        };
+        
+        if (node.matches && node.matches(".card, .table-wrap, .feature-card, .score-card")) {
+          checkAndAdd(node);
+        }
+        if (node.querySelectorAll) {
+          node.querySelectorAll(".card, .table-wrap, .feature-card, .score-card").forEach(checkAndAdd);
+        }
+      }
+    });
+  });
+  
+  if (addedTargets) {
+    setTimeout(animateNumbers, 100);
+  }
+});
+
+uiObserver.observe(document.body, { childList: true, subtree: true });
+
+function animateNumbers() {
+  document.querySelectorAll(".score-card .value").forEach(el => {
+    if (el.dataset.animated) return;
+    const text = el.innerText;
+    const num = parseFloat(text.replace(/[^0-9.-]/g, ""));
+    if (!isNaN(num) && num !== 0) {
+      el.dataset.animated = "true";
+      const duration = 1500;
+      const startTime = performance.now();
+      const match = text.match(/[0-9.-]/);
+      const prefix = match ? text.substring(0, text.indexOf(match[0])) : "";
+      let suffixMatch = text.match(/[0-9.-]([^0-9.-]+)$/);
+      const suffix = suffixMatch ? suffixMatch[1] : (text.replace(/[0-9.-]/g,"") && !prefix ? text.replace(/[0-9.-]/g,"") : "");
+      
+      const isFloat = text.includes(".");
+      
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = num * easeOut;
+        
+        let displayVal = isFloat ? current.toFixed(1) : Math.floor(current);
+        if (progress === 1) displayVal = text.replace(/[^0-9.-]/g, "");
+        el.innerText = (prefix || "") + displayVal + (suffix || "");
+        
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(animateNumbers, 500);
+  
+  // Animate progress bars
+  setTimeout(() => {
+    document.querySelectorAll(".progress-bar > div").forEach(bar => {
+      const target = bar.style.width;
+      bar.style.width = "0%";
+      setTimeout(() => bar.style.width = target, 50);
+    });
+  }, 100);
+});
+
