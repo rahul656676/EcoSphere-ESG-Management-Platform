@@ -151,6 +151,10 @@ REPORT_BUILDERS = {
     "governance": governance_report,
     "esg-summary": esg_summary_report,
     "custom": custom_report,
+    "future-emissions": environmental_report,
+    "carbon-reduction": environmental_report,
+    "compliance-risk": governance_report,
+    "smart-recommendations": esg_summary_report,
 }
 
 
@@ -173,12 +177,19 @@ def generate_ai_summary(report_type, data):
     try:
         from groq import Groq
         client = Groq(api_key=api_key)
-        prompt = (
-            "You are an ESG reporting assistant for the EcoSphere platform. "
-            f"Write an extremely short and concise (1-2 sentence) executive summary of the following "
-            f"{report_type} report JSON data. Be factual, do not invent numbers.\n\n"
-            f"{json.dumps(data, default=str)[:6000]}"
-        )
+        prompt = "You are an AI ESG Copilot for the EcoSphere platform. "
+        if report_type == "future-emissions":
+            prompt += "Analyze the following JSON data and provide a 2-sentence AI-driven forecasting model predicting future emissions trends (e.g., 'Based on current trajectory, Scope 2 emissions are projected to increase by X% next quarter...'). Be predictive and forward-looking, rather than just summarizing."
+        elif report_type == "carbon-reduction":
+            prompt += "Analyze the following JSON data and provide 2 specific, smart, actionable recommendations to lower the carbon footprint and optimize supply chain efficiency."
+        elif report_type == "compliance-risk":
+            prompt += "Analyze the following JSON data and provide a 2-sentence proactive AI analysis of potential compliance risks or audit gaps. Warn about upcoming risks based on the current open issues or lack of policies."
+        elif report_type == "smart-recommendations":
+            prompt += "Analyze the following JSON data and provide 2 tailored operational recommendations to improve diversity metrics, governance policies, and community impact."
+        else:
+            prompt += f"Write an extremely short and concise (1-2 sentence) executive summary of the following {report_type} report JSON data. Be factual, do not invent numbers."
+        
+        prompt += f"\n\nData: {json.dumps(data, default=str)[:6000]}"
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama-3.1-8b-instant",

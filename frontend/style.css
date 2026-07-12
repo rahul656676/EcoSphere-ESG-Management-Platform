@@ -44,21 +44,25 @@
 }
 
 [data-theme="light"] {
-  --bg: #F8FAFC;
-  --surface: #F1F5F9;
+  --bg: #F4FCF4;
+  --surface: #E8F5E9;
   --card-bg: #FFFFFF;
-  --card-hover: #F8FAFC;
+  --card-hover: #F9FFF9;
   --sidebar-bg: #FFFFFF;
-  --border: #E2E8F0;
-  --border-hover: #CBD5E1;
+  --border: #C8E6C9;
+  --border-hover: #A5D6A7;
   
-  --text-primary: #0F172A;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
+  --text-primary: #0F2914;
+  --text-secondary: #1B5E20;
+  --text-muted: #4CAF50;
   
-  --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --glass: rgba(255, 255, 255, 0.8);
+  /* Make all module accents parrot green to fit the theme */
+  --env: #32CD32;
+  --soc: #32CD32;
+  --gov: #32CD32;
+  --gam: #32CD32;
+  --rep: #32CD32;
+  --primary: #32CD32;
 }
 
 * { box-sizing: border-box; }
@@ -148,24 +152,27 @@ a { text-decoration: none; color: inherit; }
 }
 
 .sidebar-sub {
-  padding-left: 56px;
-  padding-bottom: 8px;
+  padding-left: 50px;
+  padding-bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  display: none; /* Sub items hidden by default, can be toggled if needed */
+  gap: 10px;
+  display: none;
 }
 .sidebar-nav-item.active + .sidebar-sub {
   display: flex;
 }
 
 .sidebar-sub a {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-muted);
   transition: var(--transition);
+  padding: 4px 0;
+  display: block;
 }
 .sidebar-sub a:hover {
   color: var(--text-primary);
+  transform: translateX(4px);
 }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }

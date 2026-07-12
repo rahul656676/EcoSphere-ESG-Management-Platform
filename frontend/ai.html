@@ -34,11 +34,11 @@
             <h4 style="margin:0 0 8px; color:var(--text-primary); font-size:16px">Generate ESG Reports</h4>
             <p class="text-muted" style="font-size:13px; line-height:1.5">One-click automated reporting compliant with global ESG frameworks like GRI, SASB, and TCFD.</p>
           </div>
-          <button class="btn btn-outline mt-4" style="width: 100%" onclick="runAIReport('environmental', this)">Generate Now <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
+          <button class="btn btn-outline mt-4" style="width: 100%" onclick="runAIReport('future-emissions', this)">Generate Now <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
         </div>
 
         <!-- Predict Future Emissions -->
-        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" onclick="toast('Loading predictive models...', false)">
+        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" >
           <div>
             <div class="flex-center" style="width:48px;height:48px;border-radius:12px;margin-bottom:16px; background:rgba(59,130,246,0.1)">
               <i data-lucide="trending-up" class="icon color-soc"></i>
@@ -46,11 +46,11 @@
             <h4 style="margin:0 0 8px; color:var(--text-primary); font-size:16px">Predict Future Emissions</h4>
             <p class="text-muted" style="font-size:13px; line-height:1.5">AI-driven forecasting models to predict Scope 1, 2, and 3 emissions based on current operational data.</p>
           </div>
-          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--soc); color:var(--soc)">View Forecast <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
+          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--soc); color:var(--soc)" onclick="runAIReport('future-emissions', this)">View Forecast <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
         </div>
 
         <!-- Carbon Reduction Suggestions -->
-        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" onclick="toast('Analyzing operational data for reductions...', false)">
+        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" >
           <div>
             <div class="flex-center bg-env" style="width:48px;height:48px;border-radius:12px;margin-bottom:16px">
               <i data-lucide="leaf" class="icon color-env"></i>
@@ -58,11 +58,11 @@
             <h4 style="margin:0 0 8px; color:var(--text-primary); font-size:16px">Carbon Reduction Suggestions</h4>
             <p class="text-muted" style="font-size:13px; line-height:1.5">Smart, actionable recommendations to lower your carbon footprint and optimize supply chain efficiency.</p>
           </div>
-          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--env); color:var(--env)">Get Suggestions <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
+          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--env); color:var(--env)" onclick="runAIReport('carbon-reduction', this)">Get Suggestions <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
         </div>
 
         <!-- Compliance Risk Prediction -->
-        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" onclick="toast('Scanning regulatory databases...', false)">
+        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" >
           <div>
             <div class="flex-center" style="width:48px;height:48px;border-radius:12px;margin-bottom:16px; background:rgba(239,68,68,0.1)">
               <i data-lucide="alert-triangle" class="icon color-error"></i>
@@ -70,11 +70,11 @@
             <h4 style="margin:0 0 8px; color:var(--text-primary); font-size:16px">Compliance Risk Prediction</h4>
             <p class="text-muted" style="font-size:13px; line-height:1.5">Proactive AI analysis of upcoming regulatory changes to flag potential compliance risks before they occur.</p>
           </div>
-          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--error); color:var(--error)">Run Risk Scan <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
+          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--error); color:var(--error)" onclick="runAIReport('compliance-risk', this)">Run Risk Scan <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
         </div>
 
         <!-- Smart Recommendations -->
-        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" onclick="toast('Fetching tailored recommendations...', false)">
+        <div class="card fade-in" style="display:flex; flex-direction:column; justify-content:space-between" >
           <div>
             <div class="flex-center bg-gov" style="width:48px;height:48px;border-radius:12px;margin-bottom:16px">
               <i data-lucide="lightbulb" class="icon color-gov"></i>
@@ -82,7 +82,7 @@
             <h4 style="margin:0 0 8px; color:var(--text-primary); font-size:16px">Smart Recommendations</h4>
             <p class="text-muted" style="font-size:13px; line-height:1.5">Tailored operational insights to improve diversity metrics, governance policies, and community impact.</p>
           </div>
-          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--gov); color:var(--gov)">View Insights <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
+          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--gov); color:var(--gov)" onclick="runAIReport('smart-recommendations', this)">View Insights <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
         </div>
 
         <!-- One-click AI Insights -->
@@ -94,7 +94,7 @@
             <h4 style="margin:0 0 8px; color:var(--text-primary); font-size:16px">One-click AI Insights</h4>
             <p class="text-muted" style="font-size:13px; line-height:1.5">Instant executive summaries and anomaly detection across all connected ESG data sources.</p>
           </div>
-          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--gam); color:var(--gam)" onclick="runAIReport('esg-summary', this)">Execute Scan <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
+          <button class="btn btn-outline mt-4" style="width: 100%; border-color:var(--gam); color:var(--gam)" onclick="runAIReport('compliance-risk', this)">Execute Scan <i data-lucide="arrow-right" class="icon" style="width:14px;height:14px"></i></button>
         </div>
 
       </div>

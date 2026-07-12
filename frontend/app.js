@@ -79,22 +79,44 @@ function renderShell(activePage, pageTitle) {
     return html;
   }).join("");
 
+  
   window.globalSearchMenu = function(query) {
     const q = query.toLowerCase();
-    document.querySelectorAll(".sidebar .nav-item, .sidebar .nav-sub-item").forEach(link => {
-      if (link.textContent.toLowerCase().includes(q)) {
-        link.style.display = "";
-      } else {
-        link.style.display = "none";
+    
+    // First, reset everything if query is empty
+    if (!q) {
+      document.querySelectorAll('.sidebar-nav-item').forEach(el => el.style.display = '');
+      document.querySelectorAll('.sidebar-sub a').forEach(el => el.style.display = '');
+      document.querySelectorAll('.sidebar-sub').forEach(el => el.style.display = '');
+      return;
+    }
+
+    document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+      let text = item.textContent.toLowerCase();
+      let hasMatch = text.includes(q);
+      
+      // Check if any sub-item matches
+      let nextEl = item.nextElementSibling;
+      if (nextEl && nextEl.classList.contains('sidebar-sub')) {
+        let subMatches = false;
+        nextEl.querySelectorAll('a').forEach(sub => {
+          if (sub.textContent.toLowerCase().includes(q)) {
+            sub.style.display = '';
+            subMatches = true;
+          } else {
+            sub.style.display = 'none';
+          }
+        });
+        
+        if (subMatches) {
+          hasMatch = true;
+          nextEl.style.display = 'flex'; // Ensure sub-menu is open if child matches
+        } else {
+          nextEl.style.display = 'none';
+        }
       }
-    });
-    document.querySelectorAll(".sidebar .nav-group").forEach(group => {
-      const hasVisibleChild = Array.from(group.querySelectorAll('.nav-sub-item')).some(child => child.style.display !== "none");
-      if (hasVisibleChild || group.querySelector('.nav-item').textContent.toLowerCase().includes(q)) {
-        group.style.display = "";
-      } else {
-        group.style.display = "none";
-      }
+      
+      item.style.display = hasMatch ? '' : 'none';
     });
   };
 
@@ -124,7 +146,7 @@ function renderShell(activePage, pageTitle) {
       <button class="topbar-btn" onclick="toggleTheme()" title="Toggle Theme">
         <i data-lucide="moon" class="icon"></i>
       </button>
-      <button class="topbar-btn" title="Notifications">
+      <button class="topbar-btn" title="Notifications" onclick="toast('No new notifications', false)">
         <i data-lucide="bell" class="icon"></i>
       </button>
       <div class="profile-menu" onclick="logout()" title="Click to Logout">
