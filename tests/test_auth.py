@@ -47,3 +47,6 @@ def test_health_check(client):
     assert data["status"] == "ok"
     assert data["database"] == "connected"
 
+# Contribution by Tarun Kr Saini
+
+
