@@ -1,0 +1,47 @@
+EcoSphere - AI Prompt Library
+=============================
+These prompts are used by ai/reports.py when ANTHROPIC_API_KEY is configured,
+to turn raw ESG numbers into short executive narratives. They are logged here
+so they can be audited / tuned without touching code.
+
+--------------------------------------------------------------------------
+1) Report Executive Summary Prompt (used for Environmental / Social /
+   Governance / ESG Summary / Custom reports)
+--------------------------------------------------------------------------
+System / role: "You are an ESG reporting assistant for the EcoSphere
+platform."
+
+User prompt template:
+"Write a concise (3-4 sentence) executive summary of the following
+{report_type} report JSON data. Be factual, do not invent numbers.
+
+{report_json}"
+
+Notes:
+- report_json is the exact structured data returned by the corresponding
+  report builder function (environmental_report / social_report /
+  governance_report / esg_summary_report / custom_report), truncated to
+  ~6000 characters to control token usage.
+- Model: claude-sonnet-4-6, max_tokens: 400.
+- If the API key is not configured, or the call fails, the platform simply
+  omits "ai_summary" (or returns an error string) and still serves the full
+  numeric report - the AI narrative is a bonus, never a dependency.
+
+--------------------------------------------------------------------------
+2) Suggested future prompts (not yet wired into reports.py, documented for
+   the next iteration)
+--------------------------------------------------------------------------
+
+a) Goal Risk Flagging Prompt:
+"Given this Environmental Goal (target CO2, current CO2, deadline), classify
+its risk of missing the deadline as Low/Medium/High and give one sentence of
+reasoning. Respond ONLY as JSON: {"risk": "...", "reason": "..."}"
+
+b) Compliance Issue Triage Prompt:
+"Given this Compliance Issue (severity, description, due date, status),
+suggest a one-line remediation action for the Owner. Keep it under 20 words."
+
+c) Challenge Recommendation Prompt:
+"Given this employee's XP total, completed challenge count, and department,
+recommend which of the following open Challenges they are most likely to
+complete, and why (one sentence)."

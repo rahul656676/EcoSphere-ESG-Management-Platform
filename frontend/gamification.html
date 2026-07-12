@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EcoSphere - Gamification</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+
+      <div class="subtabs">
+        <button class="gam active" onclick="showPanel('challengesPanel', this)">Challenges</button>
+        <button class="gam" onclick="showPanel('participationPanel', this)">Challenge Participation</button>
+        <button class="gam" onclick="showPanel('badgesPanel', this)">Badges</button>
+        <button class="gam" onclick="showPanel('rewardsPanel', this)">Rewards</button>
+        <button class="gam" onclick="showPanel('leaderboardPanel', this)">Leaderboard</button>
+      </div>
+
+      <!-- Challenges -->
+      <div id="challengesPanel" class="panel active">
+        <div class="toolbar"><button class="btn btn-orange" onclick="openModal('challengeModal')">+ New Challenge</button></div>
+        <div class="toolbar" id="statusFilterBar"></div>
+        <div class="grid grid-3" id="challengeCards"></div>
+      </div>
+
+      <!-- Challenge Participation -->
+      <div id="participationPanel" class="panel">
+        <div class="toolbar"><button class="btn btn-orange" onclick="openModal('joinChallengeModal')">+ Join Challenge</button></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Employee</th><th>Challenge</th><th>Progress</th><th>Proof</th><th>Approval</th><th>XP</th><th>Action</th></tr></thead>
+          <tbody id="participationTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div id="badgesPanel" class="panel">
+        <h4>🏅 Badge Gallery</h4>
+        <div class="grid grid-4" id="badgeGrid"></div>
+      </div>
+
+      <!-- Rewards -->
+      <div id="rewardsPanel" class="panel">
+        <div class="toolbar"><button class="btn btn-orange" onclick="openModal('rewardModal')">+ New Reward</button></div>
+        <div class="grid grid-3" id="rewardGrid"></div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div id="leaderboardPanel" class="panel">
+        <div class="table-wrap">
+          <table><thead><tr><th>Rank</th><th>Employee</th><th>Department</th><th>XP</th></tr></thead>
+          <tbody id="leaderboardTable"><tr><td colspan="4" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Challenge Modal -->
+<div class="modal-backdrop" id="challengeModal">
+  <div class="modal">
+    <h3>New Challenge</h3>
+    <form id="challengeForm">
+      <div class="form-row"><label>Title</label><input name="title" required></div>
+      <div class="form-row"><label>Description</label><textarea name="description"></textarea></div>
+      <div class="form-row"><label>XP</label><input type="number" name="xp" value="100" required></div>
+      <div class="form-row"><label>Difficulty</label>
+        <select name="difficulty"><option>Easy</option><option>Medium</option><option>Hard</option></select>
+      </div>
+      <div class="form-row"><label>Evidence Required?</label>
+        <select name="evidence_required"><option value="1">Yes</option><option value="0">No</option></select>
+      </div>
+      <div class="form-row"><label>Deadline</label><input type="date" name="deadline" required></div>
+      <div class="form-row"><label>Status</label>
+        <select name="status"><option>Draft</option><option>Active</option><option>Under Review</option><option>Completed</option><option>Archived</option></select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-orange">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('challengeModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Join Challenge Modal -->
+<div class="modal-backdrop" id="joinChallengeModal">
+  <div class="modal">
+    <h3>Join Challenge</h3>
+    <form id="joinChallengeForm">
+      <div class="form-row"><label>Employee</label><select name="employee_id" id="jcEmployee" required></select></div>
+      <div class="form-row"><label>Challenge</label><select name="challenge_id" id="jcChallenge" required></select></div>
+      <div class="form-row"><label>Progress %</label><input type="number" name="progress" value="0"></div>
+      <div class="form-row"><label>Proof file name (optional)</label><input name="proof_file"></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-orange">Submit</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('joinChallengeModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reward Modal -->
+<div class="modal-backdrop" id="rewardModal">
+  <div class="modal">
+    <h3>New Reward</h3>
+    <form id="rewardForm">
+      <div class="form-row"><label>Name</label><input name="name" required></div>
+      <div class="form-row"><label>Description</label><input name="description"></div>
+      <div class="form-row"><label>Points Required</label><input type="number" name="points_required" required></div>
+      <div class="form-row"><label>Stock</label><input type="number" name="stock" value="10"></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-orange">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('rewardModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Redeem Modal -->
+<div class="modal-backdrop" id="redeemModal">
+  <div class="modal">
+    <h3>Redeem Reward</h3>
+    <form id="redeemForm">
+      <input type="hidden" name="reward_id" id="redeemRewardId">
+      <div class="form-row"><label>Employee</label><select name="employee_id" id="redeemEmployee" required></select></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-orange">Redeem</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('redeemModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+renderShell("gamification.html", "Gamification");
+let EMPLOYEES = [], CHALLENGES = [];
+const STATUS_ORDER = ["Draft", "Active", "Under Review", "Completed", "Archived"];
+
+function statusPill(status) {
+  const map = { Draft: "gray", Active: "green", "Under Review": "purple", Completed: "blue", Archived: "gray",
+    Pending: "yellow", Approved: "green", Rejected: "red" };
+  return `<span class="pill pill-${map[status] || 'gray'}">${esc(status)}</span>`;
+}
+
+async function loadEmployees() {
+  EMPLOYEES = await api("/employees");
+  const opts = EMPLOYEES.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join("");
+  document.getElementById("jcEmployee").innerHTML = opts;
+  document.getElementById("redeemEmployee").innerHTML = opts;
+}
+
+async function loadChallenges() {
+  CHALLENGES = await api("/challenges");
+  document.getElementById("statusFilterBar").innerHTML = STATUS_ORDER.map(s =>
+    `<span class="pill pill-${s === 'Active' ? 'green' : s === 'Under Review' ? 'purple' : s === 'Completed' ? 'blue' : 'gray'}" style="cursor:pointer;" onclick="filterChallenges('${s}')">${s}</span>`
+  ).join(" ");
+
+  renderChallengeCards(CHALLENGES);
+  document.getElementById("jcChallenge").innerHTML =
+    CHALLENGES.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join("");
+}
+
+function renderChallengeCards(list) {
+  document.getElementById("challengeCards").innerHTML = list.map(c => `
+    <div class="card" style="border-color:var(--orange);">
+      <h4>🏅 ${esc(c.title)}</h4>
+      <p class="muted" style="font-size:12px;">XP: ${c.xp} • ${esc(c.difficulty)}</p>
+      <p class="muted" style="font-size:12px;">Deadline ${fmtDate(c.deadline)}</p>
+      <p>${statusPill(c.status)}</p>
+      <button class="btn btn-orange btn-sm" onclick="quickJoinChallenge(${c.id})">Join Challenge</button>
+    </div>
+  `).join("") || `<p class="empty-state">No challenges yet.</p>`;
+}
+
+function filterChallenges(status) {
+  renderChallengeCards(CHALLENGES.filter(c => c.status === status));
+}
+
+function quickJoinChallenge(id) {
+  openModal("joinChallengeModal");
+  document.getElementById("jcChallenge").value = id;
+}
+
+async function loadParticipation() {
+  const rows = await api("/challenge-participation");
+  document.getElementById("participationTable").innerHTML = rows.map(r => `<tr>
+    <td>${esc(r.employee_name)}</td><td>${esc(r.challenge_title)}</td><td>${r.progress}%</td>
+    <td>${esc(r.proof_file || '-')}</td><td>${statusPill(r.approval_status)}</td><td>${r.xp_awarded}</td>
+    <td>${r.approval_status === 'Pending' ? `
+      <button class="btn btn-blue btn-sm" onclick="decideChallenge(${r.id}, 'Approved')">Approve</button>
+      <button class="btn btn-red btn-sm" onclick="decideChallenge(${r.id}, 'Rejected')">Reject</button>
+    ` : '-'}</td>
+  </tr>`).join("") || `<tr><td colspan="7" class="empty-state">No challenge participation yet.</td></tr>`;
+}
+
+async function decideChallenge(id, decision) {
+  try {
+    await api(`/challenge-participation/${id}/decision`, { method: "POST", body: { decision } });
+    toast(`Marked ${decision}`); loadParticipation(); loadLeaderboard();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function loadBadges() {
+  const badges = await api("/badges");
+  document.getElementById("badgeGrid").innerHTML = badges.map(b => `
+    <div class="card" style="text-align:center;border-color:var(--orange);background:#fff8f0;">
+      <div style="font-size:26px;">🏅</div>
+      <h4>${esc(b.name)}</h4>
+      <p class="muted" style="font-size:12px;">${esc(b.description || '')}</p>
+    </div>
+  `).join("") || `<p class="empty-state">No badges configured yet.</p>`;
+}
+
+async function loadRewards() {
+  const rewards = await api("/rewards");
+  document.getElementById("rewardGrid").innerHTML = rewards.map(r => `
+    <div class="card">
+      <h4>🎁 ${esc(r.name)}</h4>
+      <p class="muted" style="font-size:12px;">${esc(r.description || '')}</p>
+      <p style="font-size:13px;">${r.points_required} pts • Stock: ${r.stock}</p>
+      <button class="btn btn-orange btn-sm" onclick="openRedeem(${r.id})" ${r.stock <= 0 ? 'disabled' : ''}>Redeem</button>
+    </div>
+  `).join("") || `<p class="empty-state">No rewards yet.</p>`;
+}
+
+function openRedeem(rewardId) {
+  document.getElementById("redeemRewardId").value = rewardId;
+  openModal("redeemModal");
+}
+
+async function loadLeaderboard() {
+  const rows = await api("/leaderboard");
+  document.getElementById("leaderboardTable").innerHTML = rows.map((r, i) => `<tr>
+    <td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.department || '-')}</td><td>${r.xp_total}</td>
+  </tr>`).join("") || `<tr><td colspan="4" class="empty-state">No leaderboard data yet.</td></tr>`;
+}
+
+document.getElementById("challengeForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  fd.category_id = null;
+  try { await api("/challenges", { method: "POST", body: fd }); toast("Challenge created"); closeModal("challengeModal"); e.target.reset(); loadChallenges(); }
+  catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("joinChallengeForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  try { await api("/challenge-participation", { method: "POST", body: fd }); toast("Joined challenge"); closeModal("joinChallengeModal"); e.target.reset(); loadParticipation(); }
+  catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("rewardForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  fd.status = "Active";
+  try { await api("/rewards", { method: "POST", body: fd }); toast("Reward created"); closeModal("rewardModal"); e.target.reset(); loadRewards(); }
+  catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("redeemForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  try {
+    await api(`/rewards/${fd.reward_id}/redeem`, { method: "POST", body: { employee_id: fd.employee_id } });
+    toast("Reward redeemed!"); closeModal("redeemModal"); loadRewards();
+  } catch (err) { toast(err.message, true); }
+});
+
+(async function init() {
+  try {
+    await loadEmployees();
+    await Promise.all([loadChallenges(), loadParticipation(), loadBadges(), loadRewards(), loadLeaderboard()]);
+  } catch (e) { toast(e.message, true); }
+})();
+</script>
+</body>
+</html>

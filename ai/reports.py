@@ -1,0 +1,190 @@
+"""
+EcoSphere - ai/reports.py
+Builds Environmental / Social / Governance / ESG Summary / Custom reports by
+aggregating data from the database according to the filters described in
+Section 7 of the spec (Department, Date Range, Module, Employee, Challenge,
+ESG Category), then optionally asks an LLM (Claude) to produce a short
+executive narrative summarizing the numbers.
+
+If ANTHROPIC_API_KEY is not configured, build_report() still returns the full
+structured data - only the free-text "ai_summary" field is skipped.
+"""
+
+import os
+import sys
+import json
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"))
+import models  # noqa: E402
+import controllers  # noqa: E402
+
+
+def _where_department(filters, alias=""):
+    clause, params = "", ()
+    if filters.get("department_id"):
+        col = f"{alias}department_id" if alias else "department_id"
+        clause = f" AND {col} = ?"
+        params = (filters["department_id"],)
+    return clause, params
+
+
+def environmental_report(filters):
+    goals = models.table_all("environmental_goal")
+    transactions = models.query("""
+        SELECT ct.*, d.name AS department_name FROM carbon_transaction ct
+        LEFT JOIN department d ON ct.department_id = d.id
+        ORDER BY ct.date DESC
+    """)
+    products = models.table_all("product_esg_profile")
+    total_co2 = sum(t["amount_co2"] for t in transactions)
+    return {
+        "report": "Environmental Report",
+        "total_co2_emitted": round(total_co2, 2),
+        "goals": goals,
+        "carbon_transactions": transactions,
+        "product_esg_profiles": products,
+    }
+
+
+def social_report(filters):
+    participation = models.query("""
+        SELECT ep.*, e.name AS employee_name, e.gender, ca.name AS activity_name
+        FROM employee_participation ep
+        JOIN employee e ON ep.employee_id = e.id
+        JOIN csr_activity ca ON ep.activity_id = ca.id
+    """)
+    diversity = models.query("""
+        SELECT gender, COUNT(*) AS count FROM employee GROUP BY gender
+    """)
+    approved = sum(1 for p in participation if p["approval_status"] == "Approved")
+    return {
+        "report": "Social Report",
+        "csr_participation": participation,
+        "approved_count": approved,
+        "diversity_breakdown": diversity,
+        "csr_activities": models.table_all("csr_activity"),
+    }
+
+
+def governance_report(filters):
+    policies = models.table_all("esg_policy")
+    acknowledgements = models.query("""
+        SELECT pa.*, e.name AS employee_name, p.title AS policy_title
+        FROM policy_acknowledgement pa
+        JOIN employee e ON pa.employee_id = e.id
+        JOIN esg_policy p ON pa.policy_id = p.id
+    """)
+    audits = models.table_all("audit")
+    controllers.refresh_overdue_compliance_issues()
+    issues = models.query("""
+        SELECT ci.*, d.name AS department_name FROM compliance_issue ci
+        LEFT JOIN department d ON ci.department_id = d.id
+    """)
+    return {
+        "report": "Governance Report",
+        "policies": policies,
+        "policy_acknowledgements": acknowledgements,
+        "audits": audits,
+        "compliance_issues": issues,
+        "open_issue_count": sum(1 for i in issues if i["status"] in ("Open", "Overdue")),
+    }
+
+
+def esg_summary_report(filters):
+    scores = controllers.overall_esg_scores()
+    dept_scores = models.query("""
+        SELECT ds.*, d.name AS department_name FROM department_score ds
+        JOIN department d ON ds.department_id = d.id
+        ORDER BY ds.total_score DESC
+    """)
+    return {
+        "report": "ESG Summary Report",
+        "overall_scores": scores,
+        "department_comparison": dept_scores,
+    }
+
+
+def custom_report(filters):
+    """Combine Environmental + Social + Governance + Gamification data filtered
+    by department / date range / employee / challenge / esg category."""
+    dept_clause, dept_params = _where_department(filters)
+
+    txns_sql = "SELECT * FROM carbon_transaction WHERE 1=1" + dept_clause
+    if filters.get("date_from"):
+        txns_sql += " AND date >= ?"
+        dept_params += (filters["date_from"],)
+    if filters.get("date_to"):
+        txns_sql += " AND date <= ?"
+        dept_params += (filters["date_to"],)
+    transactions = models.query(txns_sql, dept_params)
+
+    emp_clause, emp_params = "", ()
+    if filters.get("employee_id"):
+        emp_clause = " WHERE ep.employee_id = ?"
+        emp_params = (filters["employee_id"],)
+    participation = models.query(f"""
+        SELECT ep.*, e.name AS employee_name FROM employee_participation ep
+        JOIN employee e ON ep.employee_id = e.id{emp_clause}
+    """, emp_params)
+
+    chal_clause, chal_params = "", ()
+    if filters.get("challenge_id"):
+        chal_clause = " WHERE cp.challenge_id = ?"
+        chal_params = (filters["challenge_id"],)
+    challenge_participation = models.query(f"""
+        SELECT cp.*, c.title AS challenge_title FROM challenge_participation cp
+        JOIN challenge c ON cp.challenge_id = c.id{chal_clause}
+    """, chal_params)
+
+    return {
+        "report": "Custom Report",
+        "filters_applied": filters,
+        "carbon_transactions": transactions,
+        "employee_participation": participation,
+        "challenge_participation": challenge_participation,
+    }
+
+
+REPORT_BUILDERS = {
+    "environmental": environmental_report,
+    "social": social_report,
+    "governance": governance_report,
+    "esg-summary": esg_summary_report,
+    "custom": custom_report,
+}
+
+
+def build_report(report_type, filters):
+    builder = REPORT_BUILDERS.get(report_type)
+    if not builder:
+        return {"error": f"Unknown report type '{report_type}'"}
+
+    data = builder(filters)
+    data["ai_summary"] = generate_ai_summary(report_type, data)
+    return data
+
+
+def generate_ai_summary(report_type, data):
+    """Optionally call Claude (Anthropic API) to turn the numbers into a short
+    executive narrative. Returns None if no API key is configured, so the
+    platform degrades gracefully to numbers-only reports."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = (
+            "You are an ESG reporting assistant for the EcoSphere platform. "
+            f"Write a concise (3-4 sentence) executive summary of the following "
+            f"{report_type} report JSON data. Be factual, do not invent numbers.\n\n"
+            f"{json.dumps(data, default=str)[:6000]}"
+        )
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return "".join(block.text for block in response.content if hasattr(block, "text"))
+    except Exception as exc:  # pragma: no cover - network/optional dependency
+        return f"(AI summary unavailable: {exc})"

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EcoSphere - Environmental</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+
+      <div class="subtabs">
+        <button class="env active" onclick="showPanel('goalsPanel', this)">Environmental Goals</button>
+        <button class="env" onclick="showPanel('factorsPanel', this)">Emission Factors</button>
+        <button class="env" onclick="showPanel('productsPanel', this)">Product ESG Profiles</button>
+        <button class="env" onclick="showPanel('carbonPanel', this)">Carbon Transactions</button>
+      </div>
+
+      <!-- Environmental Goals -->
+      <div id="goalsPanel" class="panel active">
+        <div class="toolbar">
+          <button class="btn btn-green" onclick="openGoalModal()">+ New Goal</button>
+          <button class="btn btn-outline" onclick="loadGoals()">⟳ Refresh</button>
+          <input class="search" placeholder="Search goals..." oninput="filterTable('goalsTable', this.value)">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Department</th><th>Target CO2</th><th>Current CO2</th><th>Progress</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
+            <tbody id="goalsTable"><tr><td colspan="8" class="empty-state">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Emission Factors -->
+      <div id="factorsPanel" class="panel">
+        <div class="toolbar">
+          <button class="btn btn-green" onclick="openFactorModal()">+ New Emission Factor</button>
+          <input class="search" placeholder="Search..." oninput="filterTable('factorsTable', this.value)">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Source Type</th><th>Unit</th><th>CO2 Factor</th><th>Status</th><th></th></tr></thead>
+            <tbody id="factorsTable"><tr><td colspan="5" class="empty-state">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Product ESG Profiles -->
+      <div id="productsPanel" class="panel">
+        <div class="toolbar">
+          <button class="btn btn-green" onclick="openProductModal()">+ New Product Profile</button>
+          <input class="search" placeholder="Search..." oninput="filterTable('productsTable', this.value)">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Category</th><th>CO2 / Unit</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="productsTable"><tr><td colspan="4" class="empty-state">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Carbon Transactions -->
+      <div id="carbonPanel" class="panel">
+        <div class="toolbar">
+          <button class="btn btn-green" onclick="openCarbonModal()">+ Log Carbon Data</button>
+          <input class="search" placeholder="Search..." oninput="filterTable('carbonTable', this.value)">
+        </div>
+        <p class="muted" style="margin-top:-6px;">Carbon Transactions are auto-generated from Purchase / Manufacturing / Expenses / Fleet records when Auto Emission Calculation is enabled in Settings.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Department</th><th>Source</th><th>Factor Used</th><th>Quantity</th><th>CO2 (t)</th><th>Auto?</th></tr></thead>
+            <tbody id="carbonTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Goal Modal -->
+<div class="modal-backdrop" id="goalModal">
+  <div class="modal">
+    <h3>New Environmental Goal</h3>
+    <form id="goalForm">
+      <div class="form-row"><label>Name</label><input name="name" required></div>
+      <div class="form-row"><label>Department</label><select name="department_id" id="goalDept" required></select></div>
+      <div class="form-row"><label>Target CO2 (t)</label><input type="number" step="0.01" name="target_co2" required></div>
+      <div class="form-row"><label>Current CO2 (t)</label><input type="number" step="0.01" name="current_co2" value="0"></div>
+      <div class="form-row"><label>Deadline</label><input type="date" name="deadline" required></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('goalModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Emission Factor Modal -->
+<div class="modal-backdrop" id="factorModal">
+  <div class="modal">
+    <h3>New Emission Factor</h3>
+    <form id="factorForm">
+      <div class="form-row"><label>Name</label><input name="name" required></div>
+      <div class="form-row"><label>Source Type</label>
+        <select name="source_type" required>
+          <option>Purchase</option><option>Manufacturing</option><option>Expense</option><option>Fleet</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Unit (e.g. kg, litre, kWh)</label><input name="unit" required></div>
+      <div class="form-row"><label>CO2 Factor (per unit)</label><input type="number" step="0.001" name="co2_factor" required></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('factorModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-backdrop" id="productModal">
+  <div class="modal">
+    <h3>New Product ESG Profile</h3>
+    <form id="productForm">
+      <div class="form-row"><label>Product Name</label><input name="product_name" required></div>
+      <div class="form-row"><label>Category</label><input name="category"></div>
+      <div class="form-row"><label>CO2 per Unit</label><input type="number" step="0.01" name="co2_per_unit"></div>
+      <div class="form-row"><label>Notes</label><textarea name="notes"></textarea></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Carbon Transaction Modal -->
+<div class="modal-backdrop" id="carbonModal">
+  <div class="modal">
+    <h3>Log Carbon Data</h3>
+    <form id="carbonForm">
+      <div class="form-row"><label>Department</label><select name="department_id" id="carbonDept" required></select></div>
+      <div class="form-row"><label>Source Type</label>
+        <select name="source_type" required>
+          <option>Purchase</option><option>Manufacturing</option><option>Expense</option><option>Fleet</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Emission Factor</label><select name="emission_factor_id" id="carbonFactor"></select></div>
+      <div class="form-row"><label>Quantity</label><input type="number" step="0.01" name="quantity" required></div>
+      <div class="form-row"><label>Remarks</label><input name="remarks"></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('carbonModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+renderShell("environmental.html", "Environmental");
+let DEPARTMENTS = [];
+
+function filterTable(tbodyId, query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? "" : "none";
+  });
+}
+
+async function loadDepartments() {
+  DEPARTMENTS = await api("/departments");
+  const opts = DEPARTMENTS.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join("");
+  document.getElementById("goalDept").innerHTML = opts;
+  document.getElementById("carbonDept").innerHTML = opts;
+}
+
+async function loadFactorsIntoSelect() {
+  const factors = await api("/emission-factors");
+  document.getElementById("carbonFactor").innerHTML =
+    `<option value="">-- Manual entry --</option>` +
+    factors.map(f => `<option value="${f.id}">${esc(f.name)} (${f.co2_factor}/${esc(f.unit)})</option>`).join("");
+  return factors;
+}
+
+function statusPill(status) {
+  const map = { Active: "green", "On Track": "blue", Completed: "green", Draft: "gray", Overdue: "red" };
+  return `<span class="pill pill-${map[status] || 'gray'}">${esc(status)}</span>`;
+}
+
+async function loadGoals() {
+  const goals = await api("/environmental-goals");
+  const tbody = document.getElementById("goalsTable");
+  if (!goals.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No goals yet.</td></tr>`; return; }
+  tbody.innerHTML = goals.map(g => {
+    const dept = DEPARTMENTS.find(d => d.id === g.department_id);
+    const pct = g.target_co2 ? Math.min(100, Math.round((1 - g.current_co2 / g.target_co2) * 100)) : 0;
+    return `<tr>
+      <td>${esc(g.name)}</td>
+      <td>${dept ? esc(dept.name) : '-'}</td>
+      <td>${g.target_co2} t</td>
+      <td>${g.current_co2} t</td>
+      <td style="min-width:140px;">
+        <div class="progress-bar"><div style="width:${Math.max(pct,0)}%;"></div></div>
+        <span class="muted" style="font-size:11px;">${Math.max(pct,0)}%</span>
+      </td>
+      <td>${fmtDate(g.deadline)}</td>
+      <td>${statusPill(g.status)}</td>
+      <td><button class="btn btn-red btn-sm" onclick="deleteRow('environmental-goals', ${g.id}, loadGoals)">Delete</button></td>
+    </tr>`;
+  }).join("");
+}
+
+async function loadFactors() {
+  const factors = await api("/emission-factors");
+  const tbody = document.getElementById("factorsTable");
+  if (!factors.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No emission factors yet.</td></tr>`; return; }
+  tbody.innerHTML = factors.map(f => `<tr>
+    <td>${esc(f.name)}</td><td>${esc(f.source_type)}</td><td>${esc(f.unit)}</td><td>${f.co2_factor}</td>
+    <td>${statusPill(f.status)}</td>
+  </tr>`).join("");
+}
+
+async function loadProducts() {
+  const products = await api("/product-profiles");
+  const tbody = document.getElementById("productsTable");
+  if (!products.length) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No product profiles yet.</td></tr>`; return; }
+  tbody.innerHTML = products.map(p => `<tr>
+    <td>${esc(p.product_name)}</td><td>${esc(p.category)}</td><td>${p.co2_per_unit ?? '-'}</td><td>${esc(p.notes)}</td>
+  </tr>`).join("");
+}
+
+async function loadCarbon() {
+  const txns = await api("/carbon-transactions");
+  const tbody = document.getElementById("carbonTable");
+  if (!txns.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No carbon transactions yet.</td></tr>`; return; }
+  tbody.innerHTML = txns.map(t => `<tr>
+    <td>${fmtDate(t.date)}</td><td>${esc(t.department_name || '-')}</td><td>${esc(t.source_type)}</td>
+    <td>${esc(t.emission_factor_name || 'Manual')}</td><td>${t.quantity}</td><td>${t.amount_co2}</td>
+    <td>${t.auto_generated ? '✅' : '—'}</td>
+  </tr>`).join("");
+}
+
+async function deleteRow(endpoint, id, reload) {
+  if (!confirm("Delete this record?")) return;
+  await api(`/${endpoint}/${id}`, { method: "DELETE" });
+  toast("Deleted");
+  reload();
+}
+
+function openGoalModal() { openModal("goalModal"); }
+function openFactorModal() { openModal("factorModal"); }
+function openProductModal() { openModal("productModal"); }
+function openCarbonModal() { openModal("carbonModal"); }
+
+document.getElementById("goalForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  try {
+    await api("/environmental-goals", { method: "POST", body: fd });
+    toast("Goal created"); closeModal("goalModal"); e.target.reset(); loadGoals();
+  } catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("factorForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  fd.status = "Active";
+  try {
+    await api("/emission-factors", { method: "POST", body: fd });
+    toast("Emission factor created"); closeModal("factorModal"); e.target.reset();
+    loadFactors(); loadFactorsIntoSelect();
+  } catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("productForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  try {
+    await api("/product-profiles", { method: "POST", body: fd });
+    toast("Product profile created"); closeModal("productModal"); e.target.reset(); loadProducts();
+  } catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("carbonForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  try {
+    await api("/carbon-transactions", { method: "POST", body: fd });
+    toast("Carbon transaction logged"); closeModal("carbonModal"); e.target.reset(); loadCarbon();
+  } catch (err) { toast(err.message, true); }
+});
+
+(async function init() {
+  try {
+    await loadDepartments();
+    await loadFactorsIntoSelect();
+    await Promise.all([loadGoals(), loadFactors(), loadProducts(), loadCarbon()]);
+  } catch (e) { toast(e.message, true); }
+})();
+</script>
+</body>
+</html>

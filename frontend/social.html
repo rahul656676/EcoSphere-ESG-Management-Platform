@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EcoSphere - Social</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+
+      <div class="subtabs">
+        <button class="soc active" onclick="showPanel('csrPanel', this)">CSR Activities</button>
+        <button class="soc" onclick="showPanel('partPanel', this)">Employee Participation</button>
+        <button class="soc" onclick="showPanel('diversityPanel', this)">Diversity Dashboard</button>
+      </div>
+
+      <!-- CSR Activities -->
+      <div id="csrPanel" class="panel active">
+        <div class="toolbar">
+          <button class="btn btn-blue" onclick="openModal('csrModal')">+ New Activity</button>
+        </div>
+        <div class="grid grid-4" id="csrCards"></div>
+      </div>
+
+      <!-- Employee Participation -->
+      <div id="partPanel" class="panel">
+        <p class="section-title" style="margin-top:0;">Employee Participation: approval queue</p>
+        <div class="toolbar">
+          <button class="btn btn-blue" onclick="openModal('joinModal')">+ Join Activity</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Activity</th><th>Proof</th><th>Points</th><th>Approval</th><th>Action</th></tr></thead>
+            <tbody id="partTable"><tr><td colspan="6" class="empty-state">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Diversity Dashboard -->
+      <div id="diversityPanel" class="panel">
+        <div class="grid grid-2">
+          <div class="card">
+            <h4>👥 Gender Diversity</h4>
+            <canvas id="diversityChart" height="160"></canvas>
+          </div>
+          <div class="card">
+            <h4>📋 Employees by Department</h4>
+            <div id="deptBreakdown"><p class="muted">Loading...</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- New CSR Activity Modal -->
+<div class="modal-backdrop" id="csrModal">
+  <div class="modal">
+    <h3>New CSR Activity</h3>
+    <form id="csrForm">
+      <div class="form-row"><label>Name</label><input name="name" required></div>
+      <div class="form-row"><label>Description</label><textarea name="description"></textarea></div>
+      <div class="form-row"><label>Date</label><input type="date" name="date" required></div>
+      <div class="form-row"><label>Evidence Required?</label>
+        <select name="evidence_required"><option value="1">Yes</option><option value="0">No</option></select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-blue">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('csrModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Join Activity Modal -->
+<div class="modal-backdrop" id="joinModal">
+  <div class="modal">
+    <h3>Join CSR Activity</h3>
+    <form id="joinForm">
+      <div class="form-row"><label>Employee</label><select name="employee_id" id="joinEmployee" required></select></div>
+      <div class="form-row"><label>Activity</label><select name="activity_id" id="joinActivity" required></select></div>
+      <div class="form-row"><label>Proof file name (optional)</label><input name="proof_file" placeholder="e.g. photo.jpg"></div>
+      <div class="form-row"><label>Points</label><input type="number" name="points_earned" value="50"></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-blue">Submit</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('joinModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+renderShell("social.html", "Social");
+let EMPLOYEES = [], ACTIVITIES = [];
+
+function approvalPill(status) {
+  const map = { Pending: "yellow", Approved: "green", Rejected: "red" };
+  return `<span class="pill pill-${map[status] || 'gray'}">${esc(status)}</span>`;
+}
+
+async function loadCSRActivities() {
+  ACTIVITIES = await api("/csr-activities");
+  const grid = document.getElementById("csrCards");
+  grid.innerHTML = ACTIVITIES.map(a => `
+    <div class="card">
+      <h4>🌱 ${esc(a.name)}</h4>
+      <p class="muted" style="font-size:12px;">${esc(a.description || '')}</p>
+      <p class="muted" style="font-size:12px;">${a.evidence_required ? 'Evidence Required' : 'Open'} · ${fmtDate(a.date)}</p>
+      <button class="btn btn-blue btn-sm" onclick="quickJoin(${a.id})">Join</button>
+    </div>
+  `).join("") || `<p class="empty-state">No CSR activities yet.</p>`;
+
+  document.getElementById("joinActivity").innerHTML =
+    ACTIVITIES.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join("");
+}
+
+function quickJoin(activityId) {
+  openModal("joinModal");
+  document.getElementById("joinActivity").value = activityId;
+}
+
+async function loadEmployees() {
+  EMPLOYEES = await api("/employees");
+  document.getElementById("joinEmployee").innerHTML =
+    EMPLOYEES.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join("");
+}
+
+async function loadParticipation() {
+  const rows = await api("/employee-participation");
+  const tbody = document.getElementById("partTable");
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No participation records yet.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${esc(r.employee_name)}</td><td>${esc(r.activity_name)}</td><td>${esc(r.proof_file || '-')}</td>
+    <td>${r.points_earned}</td><td>${approvalPill(r.approval_status)}</td>
+    <td>
+      ${r.approval_status === 'Pending' ? `
+        <button class="btn btn-blue btn-sm" onclick="decide(${r.id}, 'Approved')">Approve</button>
+        <button class="btn btn-red btn-sm" onclick="decide(${r.id}, 'Rejected')">Reject</button>
+      ` : '-'}
+    </td>
+  </tr>`).join("");
+}
+
+async function decide(id, decision) {
+  try {
+    await api(`/employee-participation/${id}/decision`, { method: "POST", body: { decision } });
+    toast(`Marked ${decision}`); loadParticipation();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function loadDiversity() {
+  const canvas = document.getElementById("diversityChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width = canvas.clientWidth, h = canvas.height = 160;
+  const counts = {};
+  EMPLOYEES.forEach(e => { counts[e.gender || 'Unspecified'] = (counts[e.gender || 'Unspecified'] || 0) + 1; });
+  const entries = Object.entries(counts);
+  const total = EMPLOYEES.length || 1;
+  let startAngle = -Math.PI / 2;
+  const colors = ["#1565c0", "#e8590c", "#7b3fe4", "#1e9e50"];
+  const cx = w / 2, cy = h / 2, r = 60;
+  entries.forEach(([label, count], i) => {
+    const angle = (count / total) * Math.PI * 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+    ctx.closePath(); ctx.fillStyle = colors[i % colors.length]; ctx.fill();
+    startAngle += angle;
+  });
+  const legend = entries.map(([l, c], i) =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12px;">
+      <span style="width:10px;height:10px;background:${colors[i % colors.length]};display:inline-block;border-radius:2px;"></span>${esc(l)} (${c})
+    </span>`).join("");
+  document.getElementById("diversityChart").insertAdjacentHTML("afterend", `<div style="margin-top:10px;">${legend}</div>`);
+
+  const depts = await api("/departments");
+  document.getElementById("deptBreakdown").innerHTML = `<table><thead><tr><th>Department</th><th>Employees</th></tr></thead><tbody>` +
+    depts.map(d => `<tr><td>${esc(d.name)}</td><td>${d.employee_count}</td></tr>`).join("") + `</tbody></table>`;
+}
+
+document.getElementById("csrForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  fd.status = "Open";
+  try {
+    await api("/csr-activities", { method: "POST", body: fd });
+    toast("CSR Activity created"); closeModal("csrModal"); e.target.reset(); loadCSRActivities();
+  } catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("joinForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  try {
+    await api("/employee-participation", { method: "POST", body: fd });
+    toast("Joined activity - pending approval"); closeModal("joinModal"); e.target.reset(); loadParticipation();
+  } catch (err) { toast(err.message, true); }
+});
+
+(async function init() {
+  try {
+    await loadEmployees();
+    await loadCSRActivities();
+    await loadParticipation();
+    await loadDiversity();
+  } catch (e) { toast(e.message, true); }
+})();
+</script>
+</body>
+</html>

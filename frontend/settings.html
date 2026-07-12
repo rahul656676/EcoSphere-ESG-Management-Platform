@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EcoSphere - Settings</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+
+      <div class="subtabs">
+        <button class="active" onclick="showPanel('deptPanel', this)">Departments</button>
+        <button onclick="showPanel('catPanel', this)">Categories</button>
+        <button onclick="showPanel('configPanel', this)">ESG Configuration</button>
+        <button onclick="showPanel('notifPanel', this)">Notification Settings</button>
+      </div>
+
+      <!-- Departments -->
+      <div id="deptPanel" class="panel active">
+        <div class="toolbar">
+          <button class="btn btn-dark" onclick="openModal('deptModal')">+ New Department</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Name</th><th>Code</th><th>Head</th><th>Parent Dept</th><th>Employees</th><th>Status</th><th></th></tr></thead>
+          <tbody id="deptTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div id="catPanel" class="panel">
+        <div class="toolbar">
+          <button class="btn btn-dark" onclick="openModal('catModal')">+ New Category</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th></th></tr></thead>
+          <tbody id="catTable"><tr><td colspan="4" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- ESG Configuration -->
+      <div id="configPanel" class="panel">
+        <div class="card">
+          <h4>ESG Configuration &amp; Notifications</h4>
+          <div id="configToggles"></div>
+          <h4 style="margin-top:20px;">Score Weighting (%)</h4>
+          <div class="grid grid-3">
+            <div class="form-row"><label>Environmental Weight</label><input type="number" id="wEnv"></div>
+            <div class="form-row"><label>Social Weight</label><input type="number" id="wSoc"></div>
+            <div class="form-row"><label>Governance Weight</label><input type="number" id="wGov"></div>
+          </div>
+          <button class="btn btn-dark" onclick="saveWeights()">Save Weights</button>
+        </div>
+      </div>
+
+      <!-- Notification Settings -->
+      <div id="notifPanel" class="panel">
+        <div class="card">
+          <h4>Notification Settings</h4>
+          <div id="notifToggles"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Department Modal -->
+<div class="modal-backdrop" id="deptModal">
+  <div class="modal">
+    <h3>New Department</h3>
+    <form id="deptForm">
+      <div class="form-row"><label>Name</label><input name="name" required></div>
+      <div class="form-row"><label>Code</label><input name="code" required></div>
+      <div class="form-row"><label>Head</label><input name="head"></div>
+      <div class="form-row"><label>Parent Department</label><select name="parent_department_id" id="parentDeptSelect"><option value="">None</option></select></div>
+      <div class="form-row"><label>Employee Count</label><input type="number" name="employee_count" value="0"></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-dark">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('deptModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-backdrop" id="catModal">
+  <div class="modal">
+    <h3>New Category</h3>
+    <form id="catForm">
+      <div class="form-row"><label>Name</label><input name="name" required></div>
+      <div class="form-row"><label>Type</label>
+        <select name="type"><option value="CSR Activity">CSR Activity</option><option value="Challenge">Challenge</option></select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-dark">Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('catModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+renderShell("settings.html", "Settings");
+
+const CONFIG_LABELS = {
+  auto_emission_calculation: "Enable auto emission calculation",
+  require_evidence_csr: "Require evidence for all CSR activities",
+  auto_award_badges: "Auto-award badges on challenge completion",
+  email_alerts_compliance: "Email alerts for new compliance issues",
+};
+
+const NOTIF_LABELS = {
+  new_compliance_issue: "New compliance issue raised",
+  csr_challenge_approval: "CSR / Challenge approval decisions",
+  policy_ack_reminder: "Policy acknowledgement reminders",
+  badge_unlock: "Badge unlocks",
+};
+
+function statusPill(status) {
+  return `<span class="pill pill-green">${esc(status)}</span>`;
+}
+
+async function loadDepartments() {
+  const rows = await api("/departments");
+  document.getElementById("parentDeptSelect").innerHTML =
+    `<option value="">None</option>` + rows.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join("");
+  document.getElementById("deptTable").innerHTML = rows.map(d => {
+    const parent = rows.find(p => p.id === d.parent_department_id);
+    return `<tr>
+      <td>${esc(d.name)}</td><td>${esc(d.code)}</td><td>${esc(d.head || '-')}</td>
+      <td>${parent ? esc(parent.name) : '—'}</td><td>${d.employee_count}</td><td>${statusPill(d.status)}</td>
+      <td><button class="btn btn-red btn-sm" onclick="deleteDept(${d.id})">Delete</button></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="7" class="empty-state">No departments yet.</td></tr>`;
+}
+
+async function deleteDept(id) {
+  if (!confirm("Delete this department?")) return;
+  await api(`/departments/${id}`, { method: "DELETE" });
+  toast("Department deleted"); loadDepartments();
+}
+
+async function loadCategories() {
+  const rows = await api("/categories");
+  document.getElementById("catTable").innerHTML = rows.map(c => `<tr>
+    <td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${statusPill(c.status)}</td>
+    <td><button class="btn btn-red btn-sm" onclick="deleteCat(${c.id})">Delete</button></td>
+  </tr>`).join("") || `<tr><td colspan="4" class="empty-state">No categories yet.</td></tr>`;
+}
+
+async function deleteCat(id) {
+  if (!confirm("Delete this category?")) return;
+  await api(`/categories/${id}`, { method: "DELETE" });
+  toast("Category deleted"); loadCategories();
+}
+
+async function loadConfig() {
+  const rows = await api("/esg-config");
+  const map = Object.fromEntries(rows.map(r => [r.key, r.value]));
+  document.getElementById("configToggles").innerHTML = Object.entries(CONFIG_LABELS).map(([key, label]) => `
+    <div class="form-row" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" style="width:auto;" id="cfg_${key}" ${map[key] === 'true' ? 'checked' : ''} onchange="toggleConfig('${key}', this.checked)">
+      <label style="margin:0;">${label}</label>
+    </div>
+  `).join("");
+  document.getElementById("wEnv").value = map.env_weight || 40;
+  document.getElementById("wSoc").value = map.social_weight || 30;
+  document.getElementById("wGov").value = map.governance_weight || 30;
+}
+
+async function toggleConfig(key, checked) {
+  await api(`/esg-config/${key}`, { method: "PUT", body: { value: checked ? "true" : "false" } });
+  toast("Setting updated");
+}
+
+async function saveWeights() {
+  const env = document.getElementById("wEnv").value;
+  const soc = document.getElementById("wSoc").value;
+  const gov = document.getElementById("wGov").value;
+  await Promise.all([
+    api("/esg-config/env_weight", { method: "PUT", body: { value: env } }),
+    api("/esg-config/social_weight", { method: "PUT", body: { value: soc } }),
+    api("/esg-config/governance_weight", { method: "PUT", body: { value: gov } }),
+  ]);
+  toast("Score weighting saved");
+}
+
+async function loadNotifSettings() {
+  const rows = await api("/notification-settings");
+  const map = Object.fromEntries(rows.map(r => [r.key, r.enabled]));
+  document.getElementById("notifToggles").innerHTML = Object.entries(NOTIF_LABELS).map(([key, label]) => `
+    <div class="form-row" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" style="width:auto;" ${map[key] ? 'checked' : ''} onchange="toggleNotif('${key}', this.checked)">
+      <label style="margin:0;">${label}</label>
+    </div>
+  `).join("");
+}
+
+async function toggleNotif(key, checked) {
+  await api(`/notification-settings/${key}`, { method: "PUT", body: { enabled: checked } });
+  toast("Notification setting updated");
+}
+
+document.getElementById("deptForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  fd.status = "Active";
+  if (!fd.parent_department_id) fd.parent_department_id = null;
+  try { await api("/departments", { method: "POST", body: fd }); toast("Department created"); closeModal("deptModal"); e.target.reset(); loadDepartments(); }
+  catch (err) { toast(err.message, true); }
+});
+
+document.getElementById("catForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  fd.status = "Active";
+  try { await api("/categories", { method: "POST", body: fd }); toast("Category created"); closeModal("catModal"); e.target.reset(); loadCategories(); }
+  catch (err) { toast(err.message, true); }
+});
+
+(async function init() {
+  try {
+    await Promise.all([loadDepartments(), loadCategories(), loadConfig(), loadNotifSettings()]);
+  } catch (e) { toast(e.message, true); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EcoSphere - Reports</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="content">
+
+      <div class="subtabs">
+        <button class="active" onclick="showPanel('reportCardsPanel', this)">Standard Reports</button>
+        <button onclick="showPanel('customPanel', this)">Custom Report Builder</button>
+      </div>
+
+      <div id="reportCardsPanel" class="panel active">
+        <div class="grid grid-4">
+          <div class="card">
+            <h4>🌍 Environmental Report</h4>
+            <p class="muted" style="font-size:12px;">Emissions, goals, vendor &amp; product breakdown</p>
+            <button class="btn btn-dark" onclick="generate('environmental')">Generate</button>
+          </div>
+          <div class="card">
+            <h4>👥 Social Report</h4>
+            <p class="muted" style="font-size:12px;">Diversity, CSR participation, training completion</p>
+            <button class="btn btn-dark" onclick="generate('social')">Generate</button>
+          </div>
+          <div class="card">
+            <h4>⚖️ Governance Report</h4>
+            <p class="muted" style="font-size:12px;">Policies, audits, compliance &amp; risk summary</p>
+            <button class="btn btn-dark" onclick="generate('governance')">Generate</button>
+          </div>
+          <div class="card">
+            <h4>📊 ESG Summary</h4>
+            <p class="muted" style="font-size:12px;">Executive overview: all 4 scores + dept comparison</p>
+            <button class="btn btn-dark" onclick="generate('esg-summary')">Generate</button>
+          </div>
+        </div>
+
+        <div class="section-title">Report Output</div>
+        <div class="card" id="reportOutput"><p class="muted">Select a report above to generate output.</p></div>
+      </div>
+
+      <div id="customPanel" class="panel">
+        <div class="card">
+          <h4>🔧 Custom Report Builder: Filters</h4>
+          <div class="grid grid-4">
+            <div class="form-row"><label>Department</label><select id="fDept"><option value="">All</option></select></div>
+            <div class="form-row"><label>Date From</label><input type="date" id="fDateFrom"></div>
+            <div class="form-row"><label>Date To</label><input type="date" id="fDateTo"></div>
+            <div class="form-row"><label>Employee</label><select id="fEmployee"><option value="">All</option></select></div>
+            <div class="form-row"><label>Challenge</label><select id="fChallenge"><option value="">All</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-dark" onclick="runCustomReport()">▶ Run Report</button>
+            <button class="btn btn-outline" onclick="exportReport('pdf')">Export: PDF</button>
+            <button class="btn btn-outline" onclick="exportReport('excel')">Export: Excel</button>
+            <button class="btn btn-outline" onclick="exportReport('csv')">Export: CSV</button>
+          </div>
+        </div>
+        <div class="section-title">Custom Report Output</div>
+        <div class="card" id="customOutput"><p class="muted">Run the report to see results.</p></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+renderShell("reports.html", "Reports");
+let lastReportData = null;
+
+function renderJsonTable(rows) {
+  if (!rows || !rows.length) return `<p class="muted">No rows.</p>`;
+  const cols = Object.keys(rows[0]);
+  return `<div class="table-wrap"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${esc(r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+
+async function generate(type) {
+  const out = document.getElementById("reportOutput");
+  out.innerHTML = `<p class="muted">Generating...</p>`;
+  try {
+    const data = await api(`/reports/${type}`);
+    lastReportData = data;
+    let html = `<h4>${esc(data.report)}</h4>`;
+    if (data.ai_summary) html += `<p style="background:#f4f6f8;padding:10px;border-radius:6px;">${esc(data.ai_summary)}</p>`;
+    for (const [key, val] of Object.entries(data)) {
+      if (["report", "ai_summary"].includes(key)) continue;
+      if (Array.isArray(val)) {
+        html += `<h4 style="margin-top:16px;">${esc(key)}</h4>${renderJsonTable(val)}`;
+      } else if (val && typeof val === "object") {
+        html += `<h4 style="margin-top:16px;">${esc(key)}</h4><p>${esc(JSON.stringify(val))}</p>`;
+      } else {
+        html += `<p><b>${esc(key)}:</b> ${esc(val)}</p>`;
+      }
+    }
+    out.innerHTML = html;
+  } catch (e) { out.innerHTML = `<p class="muted">Error: ${esc(e.message)}</p>`; }
+}
+
+async function loadFilterOptions() {
+  const [depts, employees, challenges] = await Promise.all([
+    api("/departments"), api("/employees"), api("/challenges")
+  ]);
+  document.getElementById("fDept").innerHTML += depts.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join("");
+  document.getElementById("fEmployee").innerHTML += employees.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join("");
+  document.getElementById("fChallenge").innerHTML += challenges.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join("");
+}
+
+async function runCustomReport() {
+  const params = new URLSearchParams();
+  const dept = document.getElementById("fDept").value;
+  const from = document.getElementById("fDateFrom").value;
+  const to = document.getElementById("fDateTo").value;
+  const emp = document.getElementById("fEmployee").value;
+  const chal = document.getElementById("fChallenge").value;
+  if (dept) params.set("department_id", dept);
+  if (from) params.set("date_from", from);
+  if (to) params.set("date_to", to);
+  if (emp) params.set("employee_id", emp);
+  if (chal) params.set("challenge_id", chal);
+
+  const out = document.getElementById("customOutput");
+  out.innerHTML = `<p class="muted">Running report...</p>`;
+  try {
+    const data = await api(`/reports/custom?${params.toString()}`);
+    lastReportData = data;
+    let html = "";
+    for (const [key, val] of Object.entries(data)) {
+      if (key === "report") continue;
+      if (key === "ai_summary" && val) { html += `<p style="background:#f4f6f8;padding:10px;border-radius:6px;">${esc(val)}</p>`; continue; }
+      if (Array.isArray(val)) html += `<h4 style="margin-top:16px;">${esc(key)}</h4>${renderJsonTable(val)}`;
+    }
+    out.innerHTML = html || `<p class="muted">No data matched the selected filters.</p>`;
+  } catch (e) { out.innerHTML = `<p class="muted">Error: ${esc(e.message)}</p>`; }
+}
+
+function exportReport(format) {
+  if (!lastReportData) { toast("Run a report first", true); return; }
+  if (format === "csv") {
+    const rows = Object.values(lastReportData).find(v => Array.isArray(v)) || [];
+    if (!rows.length) { toast("No tabular data to export", true); return; }
+    const cols = Object.keys(rows[0]);
+    const csv = [cols.join(",")].concat(rows.map(r => cols.map(c => JSON.stringify(r[c] ?? "")).join(","))).join("\n");
+    downloadFile(csv, "ecosphere_report.csv", "text/csv");
+  } else {
+    downloadFile(JSON.stringify(lastReportData, null, 2), `ecosphere_report.${format === 'pdf' ? 'json' : 'json'}`, "application/json");
+    toast(`${format.toUpperCase()} export uses the JSON payload in this demo build.`);
+  }
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+loadFilterOptions().catch(e => toast(e.message, true));
+</script>
+</body>
+</html>
